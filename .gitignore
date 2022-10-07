@@ -1,0 +1,15 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/loc
+loc.so
+loc.dylib
+loc.dll
+loc.a
+loc.lib
+loc-test-*
+*.exe
+*.o
+*.obj
+*.lst
