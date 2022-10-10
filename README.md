@@ -12,10 +12,10 @@ dub
 ## TODO
 - [x] add support multi lines comment
 - [ ] add sort by lines/comment... etc
-- [ ] add count file size
+- [x] add count file size
 - [x] add total
 - [ ] improve speed
-- [ ] improve display
+- [x] improve display
 - [ ] add unitest
 
 ## Supported Language

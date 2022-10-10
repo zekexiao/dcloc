@@ -5,7 +5,14 @@ import std.string;
 import std.range;
 import std.path;
 import std.conv;
+import std.getopt;
+import std.math;
 import tabular;
+
+struct AppOpt
+{
+	bool countFileSize = false;
+}
 
 enum LangEnum
 {
@@ -28,6 +35,7 @@ enum LangEnum
 
 LangEnum[string] extLangMap;
 string[LangEnum] displayNameLangMap;
+AppOpt appOpt;
 
 static this()
 {
@@ -98,10 +106,42 @@ struct LangCount
 	int comment;
 	int code;
 	int blank;
+	ulong fileSize;
 }
 
 void printResult(ref LangCount*[LangEnum] result)
 {
+	// format 1024 -> 1.00KB
+	string formatFileSize(double fileSize)
+	{
+		string rate;
+		if (fileSize < pow(1024, 1))
+		{
+			rate = "B";
+		}
+		else if (fileSize < pow(1024, 2))
+		{
+			rate = "KB";
+			fileSize /= 1024;
+		}
+		else if (fileSize < pow(1024, 3))
+		{
+			rate = "MB";
+			fileSize /= pow(1024, 2);
+		}
+		else if (fileSize < pow(1024, 4))
+		{
+			rate = "GB";
+			fileSize /= pow(1024, 3);
+		}
+		else if (fileSize < pow(1024, 5))
+		{
+			rate = "TB";
+			fileSize /= pow(1024, 4);
+		}
+		return format("%.2f%s", fileSize, rate);
+	}
+
 	string[][] data = [
 		["Language", "File", "Code", "Comment", "Blank", "Lines"]
 	];
@@ -116,29 +156,74 @@ void printResult(ref LangCount*[LangEnum] result)
 			sumCount.comment += val.comment;
 			sumCount.blank += val.blank;
 			sumCount.lines += val.lines;
-			data ~= [
+			sumCount.fileSize += val.fileSize;
+
+			auto line = [
 				*name, to!string(val.files), to!string(val.code),
 				to!string(val.comment), to!string(val.blank),
 				to!string(val.lines)
 			];
+
+			if (appOpt.countFileSize)
+			{
+				line ~= formatFileSize(val.fileSize);
+			}
+			data ~= line;
 		}
 	}
-	
+
 	data ~= [""];
-	data ~=  [
-				"Total", to!string(sumCount.files), to!string(sumCount.code),
-				to!string(sumCount.comment), to!string(sumCount.blank),
-				to!string(sumCount.lines)
-			];
+	data ~= [
+		"Total", to!string(sumCount.files), to!string(sumCount.code),
+		to!string(sumCount.comment), to!string(sumCount.blank),
+		to!string(sumCount.lines)
+	];
+
+	if (appOpt.countFileSize)
+	{
+		data[0] ~= "Files Size";
+		data[$ - 1] ~= formatFileSize(sumCount.fileSize);
+	}
+
 	writeln(renderTable(data));
 }
 
-void main()
+bool parseArgs(string[] args)
 {
+	try
+	{
+		auto helpInformation = getopt(
+			args,
+			"fileSize|s", "Count file sizes", &appOpt.countFileSize);
+
+		if (helpInformation.helpWanted)
+		{
+			defaultGetoptPrinter("Simple count lines of code impl by DLang.",
+				helpInformation.options);
+			return false;
+		}
+	}
+	catch (GetOptException e)
+	{
+		writeln(e.msg);
+		parseArgs([args[0], "--help"]); // @suppress(dscanner.unused_result)
+		return false;
+	}
+
+	return true;
+}
+
+void main(string[] args)
+{
+	if (!parseArgs(args))
+		return;
+
+	writeln(appOpt.countFileSize);
 	LangCount*[LangEnum] result;
 	foreach (string fileName; dirEntries("./", SpanMode.shallow))
 	{
 		auto ext = extension(fileName);
+
 		if (ext.empty)
 			continue;
 
@@ -162,6 +247,12 @@ void main()
 		string mutliLineCommentEndChars;
 		string content = readText(fileName);
 		val.files += 1;
+
+		if (appOpt.countFileSize)
+		{
+			auto file = File(fileName);
+			val.fileSize += file.size();
+		}
 
 		foreach (line; splitLines(content))
 		{
