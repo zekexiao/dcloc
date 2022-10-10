@@ -1,8 +1,11 @@
+module loc;
 import std.stdio;
 import std.file;
 import std.string;
 import std.range;
 import std.path;
+import std.conv;
+import tabular;
 
 enum LangEnum
 {
@@ -24,6 +27,7 @@ enum LangEnum
 }
 
 LangEnum[string] extLangMap;
+string[LangEnum] displayNameLangMap;
 
 static this()
 {
@@ -44,6 +48,23 @@ static this()
 		".json": LangEnum.json,
 		".js": LangEnum.javaScript,
 		".ts": LangEnum.typeScript
+	];
+	
+	displayNameLangMap = [
+		LangEnum.d : "D",
+		LangEnum.cpp : "C++",
+		LangEnum.go : "Go",
+		LangEnum.rust : "Rust",
+		LangEnum.bash : "Bash",
+		LangEnum.python : "Python",
+		LangEnum.ruby : "Ruby",
+		LangEnum.java : "Java",
+		LangEnum.markDown : "MarkDown",
+		LangEnum.html : "HTML",
+		LangEnum.yaml : "YAML",
+		LangEnum.json : "JSON",
+		LangEnum.javaScript : "JavaScript",
+		LangEnum.typeScript : "TypeScript",
 	];
 }
 
@@ -72,6 +93,24 @@ struct LangCount
 	int comment;
 	int code;
 	int blank;
+}
+
+void printResult(ref LangCount*[LangEnum] result)
+{
+	string[][] data = [["Language", "File", "Code", "Comment", "Blank", "Lines"]];
+	foreach (val; result)
+	{
+		if(auto name = val.type in displayNameLangMap) {
+			data ~= [
+				*name, to!string(val.files), to!string(val.code),
+				to!string(val.comment), to!string(val.blank),
+				to!string(val.lines)
+			];
+		}
+		
+	}
+		auto myTable = new TableBuilder().withData(data).build();
+    writeln(myTable);
 }
 
 void main()
@@ -118,14 +157,8 @@ void main()
 			{
 				val.code += 1;
 			}
-
 		}
 	}
-
-	writeln("Lang", "\t", "File", "\t", "Code", "\t", "Comment", "\t", "Blank", "\t", "Lines");
-	foreach (val; result)
-	{
-		writeln(val.type, "\t", val.files, "\t", val.code, "\t", val.comment, "\t", val.blank, "\t", val
-				.lines);
-	}
+	
+	printResult(result);
 }

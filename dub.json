@@ -3,6 +3,9 @@
 		"xiao"
 	],
 	"copyright": "Copyright © 2022, xiao",
+	"dependencies": {
+		"tabular": "~>0.1.0"
+	},
 	"description": "A minimal D application.",
 	"license": "proprietary",
 	"name": "loc"
