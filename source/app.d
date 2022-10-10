@@ -7,11 +7,18 @@ import std.path;
 import std.conv;
 import std.getopt;
 import std.math;
+import std.algorithm.sorting;
 import tabular;
 
 struct AppOpt
 {
-	bool countFileSize = false;
+	bool countFileSize;
+	bool sortByFile;
+	bool sortByCode;
+	bool sortByComment;
+	bool sortByBlank;
+	bool sortByLines;
+	bool sortByFileSize;
 }
 
 enum LangEnum
@@ -92,6 +99,7 @@ string[][] getLangCommentPrefix(LangEnum lang)
 	case LangEnum.ruby:
 		return [["#"], ["=begin", "=end"]];
 	case LangEnum.json:
+	case LangEnum.markDown:
 		return noComment;
 	default:
 		return cStyleComment;
@@ -146,11 +154,28 @@ void printResult(ref LangCount*[LangEnum] result)
 		["Language", "File", "Code", "Comment", "Blank", "Lines"]
 	];
 
+	auto sortedKeys = result.keys.sort!((a, b) {
+		if(appOpt.sortByFile) {
+			return result[a].files < result[b].files;
+		} else if(appOpt.sortByCode) {
+			return result[a].code < result[b].code;
+		} else if(appOpt.sortByComment) {
+			return result[a].comment < result[b].comment;
+		} else if(appOpt.sortByBlank) {
+			return result[a].blank < result[b].blank;
+		} else if(appOpt.sortByLines) {
+			return result[a].lines < result[b].lines;
+		} else if(appOpt.sortByFileSize) {
+			return result[a].fileSize < result[b].fileSize;
+		}
+		return a < b;
+	});
+
 	LangCount sumCount;
-	foreach (val; result)
-	{
-		if (auto name = val.type in displayNameLangMap)
+	foreach(key; sortedKeys) {
+		if (auto name = key in displayNameLangMap)
 		{
+			auto val = result[key];
 			sumCount.files += val.files;
 			sumCount.code += val.code;
 			sumCount.comment += val.comment;
@@ -172,6 +197,7 @@ void printResult(ref LangCount*[LangEnum] result)
 		}
 	}
 
+
 	data ~= [""];
 	data ~= [
 		"Total", to!string(sumCount.files), to!string(sumCount.code),
@@ -192,9 +218,42 @@ bool parseArgs(string[] args)
 {
 	try
 	{
+		void sortArgHandle(string option, string value)
+		{
+			auto failed = false;
+			switch (value)
+			{
+			case "file":
+				appOpt.sortByFile = true;
+				break;
+			case "code":
+				appOpt.sortByCode = true;
+				break;
+			case "comment":
+				appOpt.sortByComment = true;
+				break;
+			case "blank":
+				appOpt.sortByBlank = true;
+				break;
+			case "lines":
+				appOpt.sortByLines = true;
+				break;
+			case "fileSize":
+				appOpt.sortByFileSize = true;
+				break;
+			default:
+				failed = true;
+				break;
+			}
+
+			if(failed)
+				throw new GetOptException("Unrecognized sort arg -" ~ option ~ "=" ~ value);
+		}
+
 		auto helpInformation = getopt(
 			args,
-			"fileSize|s", "Count file sizes", &appOpt.countFileSize);
+			"fileSize|f", "Count file sizes", &appOpt.countFileSize,
+			"sort|s", "Result sort by --sort=file/code/comment/blank/lines/fileSize", &sortArgHandle);
 
 		if (helpInformation.helpWanted)
 		{
@@ -202,11 +261,13 @@ bool parseArgs(string[] args)
 				helpInformation.options);
 			return false;
 		}
+		
 	}
 	catch (GetOptException e)
 	{
 		writeln(e.msg);
-		parseArgs([args[0], "--help"]); // @suppress(dscanner.unused_result)
+		writeln("-----------------------------------------");
+		parseArgs(["", "--help"]); // @suppress(dscanner.unused_result)
 		return false;
 	}
 
@@ -218,7 +279,6 @@ void main(string[] args)
 	if (!parseArgs(args))
 		return;
 
-	writeln(appOpt.countFileSize);
 	LangCount*[LangEnum] result;
 	foreach (string fileName; dirEntries("./", SpanMode.shallow))
 	{
@@ -257,54 +317,58 @@ void main(string[] args)
 		foreach (line; splitLines(content))
 		{
 			val.lines += 1;
-
-			if (!comments.empty)
+			bool isComment = false;
+			foreach (comment; comments)
 			{
-				foreach (comment; comments)
+				if (comment.length == 1)
 				{
-					if (comment.length == 1)
+					if (countingMultiLineComment)
+						continue;
+					// one line comment
+					if (startsWith(stripLeft(line), comment[0]))
 					{
-						if (countingMultiLineComment)
-							continue;
-						// one line comment
-						if (startsWith(stripLeft(line), comment[0]))
+						val.comment += 1;
+						isComment = true;
+						break;
+					}
+				}
+				else
+				{
+					// mutli line comments
+					if (countingMultiLineComment)
+					{
+						val.comment += 1;
+						isComment = true;
+						if (endsWith(stripLeft(line), mutliLineCommentEndChars))
 						{
-							val.comment += 1;
+							countingMultiLineComment = false;
 							break;
 						}
 					}
 					else
 					{
-						// mutli line comments
-						if (countingMultiLineComment)
+						if (startsWith(stripLeft(line), comment[0]))
 						{
 							val.comment += 1;
-							if (endsWith(stripLeft(line), mutliLineCommentEndChars))
-							{
-								countingMultiLineComment = false;
-								break;
-							}
-						}
-						else
-						{
-							if (startsWith(stripLeft(line), comment[0]))
-							{
-								val.comment += 1;
-								countingMultiLineComment = true;
-								mutliLineCommentEndChars = comment[1];
-								break;
-							}
+							isComment = true;
+							countingMultiLineComment = true;
+							mutliLineCommentEndChars = comment[1];
+							break;
 						}
 					}
 				}
 			}
-			else if (stripRight(line).empty)
+
+			if (!isComment)
 			{
-				val.blank += 1;
-			}
-			else
-			{
-				val.code += 1;
+				if (stripRight(line).empty)
+				{
+					val.blank += 1;
+				}
+				else
+				{
+					val.code += 1;
+				}
 			}
 		}
 	}
