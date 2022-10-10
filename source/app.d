@@ -109,8 +109,8 @@ void printResult(ref LangCount*[LangEnum] result)
 		}
 		
 	}
-		auto myTable = new TableBuilder().withData(data).build();
-    writeln(myTable);
+	
+    writeln(renderTable(data));
 }
 
 void main()
@@ -159,6 +159,6 @@ void main()
 			}
 		}
 	}
-	
+
 	printResult(result);
 }
