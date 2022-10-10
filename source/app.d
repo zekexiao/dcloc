@@ -49,39 +49,44 @@ static this()
 		".js": LangEnum.javaScript,
 		".ts": LangEnum.typeScript
 	];
-	
+
 	displayNameLangMap = [
-		LangEnum.d : "D",
-		LangEnum.cpp : "C++",
-		LangEnum.go : "Go",
-		LangEnum.rust : "Rust",
-		LangEnum.bash : "Bash",
-		LangEnum.python : "Python",
-		LangEnum.ruby : "Ruby",
-		LangEnum.java : "Java",
-		LangEnum.markDown : "MarkDown",
-		LangEnum.html : "HTML",
-		LangEnum.yaml : "YAML",
-		LangEnum.json : "JSON",
-		LangEnum.javaScript : "JavaScript",
-		LangEnum.typeScript : "TypeScript",
+		LangEnum.d: "D",
+		LangEnum.cpp: "C++",
+		LangEnum.go: "Go",
+		LangEnum.rust: "Rust",
+		LangEnum.bash: "Bash",
+		LangEnum.python: "Python",
+		LangEnum.ruby: "Ruby",
+		LangEnum.java: "Java",
+		LangEnum.markDown: "MarkDown",
+		LangEnum.html: "HTML",
+		LangEnum.yaml: "YAML",
+		LangEnum.json: "JSON",
+		LangEnum.javaScript: "JavaScript",
+		LangEnum.typeScript: "TypeScript",
 	];
 }
 
-string getLangCommentPrefix(LangEnum lang)
+string[][] getLangCommentPrefix(LangEnum lang)
 {
+	string[][] noComment;
+	string[][] cStyleComment = [["//"], ["/*", "*/"]];
 	switch (lang)
 	{
-	case LangEnum.markDown:
 	case LangEnum.html:
-		return "<!--";
-	case LangEnum.bash:
+		return [["<!--", "--!>"]];
 	case LangEnum.python:
-	case LangEnum.ruby:
+		return [["#"], [`"""`, `"""`]];
+	case LangEnum.bash:
 	case LangEnum.yaml:
-		return "#";
+		return [["#"]];
+	case LangEnum.ruby:
+		return [["#"], ["=begin", "=end"]];
+	case LangEnum.json:
+		return noComment;
 	default:
-		return "//";
+		return cStyleComment;
 	}
 }
 
@@ -97,20 +102,23 @@ struct LangCount
 
 void printResult(ref LangCount*[LangEnum] result)
 {
-	string[][] data = [["Language", "File", "Code", "Comment", "Blank", "Lines"]];
+	string[][] data = [
+		["Language", "File", "Code", "Comment", "Blank", "Lines"]
+	];
 	foreach (val; result)
 	{
-		if(auto name = val.type in displayNameLangMap) {
+		if (auto name = val.type in displayNameLangMap)
+		{
 			data ~= [
 				*name, to!string(val.files), to!string(val.code),
 				to!string(val.comment), to!string(val.blank),
 				to!string(val.lines)
 			];
 		}
-		
+
 	}
-	
-    writeln(renderTable(data));
+
+	writeln(renderTable(data));
 }
 
 void main()
@@ -137,7 +145,9 @@ void main()
 		}
 
 		auto val = result[lang];
-		auto comment = getLangCommentPrefix(lang);
+		auto comments = getLangCommentPrefix(lang);
+		bool countingMultiLineComment = false;
+		string mutliLineCommentEndChars;
 		string content = readText(fileName);
 		val.files += 1;
 
@@ -145,9 +155,45 @@ void main()
 		{
 			val.lines += 1;
 
-			if (startsWith(stripLeft(line), comment))
+			if (!comments.empty)
 			{
-				val.comment += 1;
+				foreach (comment; comments)
+				{
+					if (comment.length == 1)
+					{
+						if (countingMultiLineComment)
+							continue;
+						// one line comment
+						if (startsWith(stripLeft(line), comment[0]))
+						{
+							val.comment += 1;
+							break;
+						}
+					}
+					else
+					{
+						// mutli line comments
+						if (countingMultiLineComment)
+						{
+							val.comment += 1;
+							if (endsWith(stripLeft(line), mutliLineCommentEndChars))
+							{
+								countingMultiLineComment = false;
+								break;
+							}
+						}
+						else
+						{
+							if (startsWith(stripLeft(line), comment[0]))
+							{
+								val.comment += 1;
+								countingMultiLineComment = true;
+								mutliLineCommentEndChars = comment[1];
+								break;
+							}
+						}
+					}
+				}
 			}
 			else if (stripRight(line).empty)
 			{
