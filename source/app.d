@@ -143,7 +143,7 @@ void printResult(ref LangCount*[LangEnum] result)
 			rate = "GB";
 			fileSize /= pow(1024, 3);
 		}
-		else if (fileSize < pow(1024, 5))
+		else
 		{
 			rate = "TB";
 			fileSize /= pow(1024, 4);
