@@ -1,22 +1,30 @@
 # loc
 Simple count lines of code impl by DLang.
 
+Features:
+- sort by comment/code...
+- multi line comments
+- count file size
+
+
 ## Run
 ```
 git clone https://github.com/alluLinger/loc
 cd loc
-dub
+dub run -- -f -s=code
 ```
-![screen](https://user-images.githubusercontent.com/21037233/194507373-e95649b3-7765-4a73-adbe-673dad21a113.png)
+
+![screen](https://user-images.githubusercontent.com/21037233/194888455-9837217d-6729-463c-994f-9938c3403099.png)
 
 ## TODO
-- [x] add support multi lines comment
-- [ ] add sort by lines/comment... etc
-- [x] add count file size
-- [x] add total
 - [ ] improve speed
-- [x] improve display
 - [ ] add unitest
+
+## Options
+```
+-f --fileSize Count file sizes
+-s --sort Result sort by --sort=file/code/comment/blank/lines/fileSize
+```
 
 ## Supported Language
 - [x] d
