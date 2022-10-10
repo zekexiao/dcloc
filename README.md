@@ -24,6 +24,7 @@ dub run -- -f -s=code
 ```
 -f --fileSize Count file sizes
 -s --sort Result sort by --sort=file/code/comment/blank/lines/fileSize
+-r --recursive Recursive depth directories
 ```
 
 ## Supported Language

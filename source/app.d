@@ -19,6 +19,7 @@ struct AppOpt
 	bool sortByBlank;
 	bool sortByLines;
 	bool sortByFileSize;
+	bool recursiveDir;
 }
 
 enum LangEnum
@@ -253,7 +254,8 @@ bool parseArgs(string[] args)
 		auto helpInformation = getopt(
 			args,
 			"fileSize|f", "Count file sizes", &appOpt.countFileSize,
-			"sort|s", "Result sort by --sort=file/code/comment/blank/lines/fileSize", &sortArgHandle);
+			"sort|s", "Result sort by --sort=file/code/comment/blank/lines/fileSize", &sortArgHandle,
+			"recursive|r", "Recursive depth directories", &appOpt.recursiveDir);
 
 		if (helpInformation.helpWanted)
 		{
@@ -280,7 +282,8 @@ void main(string[] args)
 		return;
 
 	LangCount*[LangEnum] result;
-	foreach (string fileName; dirEntries("./", SpanMode.shallow))
+	SpanMode spanMode = appOpt.recursiveDir ? SpanMode.depth : SpanMode.shallow;
+	foreach (string fileName; dirEntries("./", spanMode))
 	{
 		auto ext = extension(fileName);
 
