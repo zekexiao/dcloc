@@ -14,8 +14,8 @@ dub
 - [ ] add sort by lines/comment... etc
 - [ ] add count file size
 - [ ] add total
-- [ ] imporve speed
-- [ ] imporve display
+- [ ] improve speed
+- [ ] improve display
 - [ ] add unitest
 
 ## Supported Language
