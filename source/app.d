@@ -1,4 +1,4 @@
-module loc;
+module dcloc;
 import std.stdio;
 import std.file;
 import std.string;

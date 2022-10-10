@@ -6,7 +6,7 @@
 	"dependencies": {
 		"tabular": "~>0.1.0"
 	},
-	"description": "A minimal D application.",
+	"description": "D version cloc(Count Lines Of Code).",
 	"license": "proprietary",
-	"name": "loc"
+	"name": "dcloc"
 }
