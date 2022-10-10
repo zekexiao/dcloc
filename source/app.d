@@ -105,19 +105,31 @@ void printResult(ref LangCount*[LangEnum] result)
 	string[][] data = [
 		["Language", "File", "Code", "Comment", "Blank", "Lines"]
 	];
+
+	LangCount sumCount;
 	foreach (val; result)
 	{
 		if (auto name = val.type in displayNameLangMap)
 		{
+			sumCount.files += val.files;
+			sumCount.code += val.code;
+			sumCount.comment += val.comment;
+			sumCount.blank += val.blank;
+			sumCount.lines += val.lines;
 			data ~= [
 				*name, to!string(val.files), to!string(val.code),
 				to!string(val.comment), to!string(val.blank),
 				to!string(val.lines)
 			];
 		}
-
 	}
-
+	
+	data ~= [""];
+	data ~=  [
+				"Total", to!string(sumCount.files), to!string(sumCount.code),
+				to!string(sumCount.comment), to!string(sumCount.blank),
+				to!string(sumCount.lines)
+			];
 	writeln(renderTable(data));
 }
 

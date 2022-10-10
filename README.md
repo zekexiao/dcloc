@@ -13,7 +13,7 @@ dub
 - [x] add support multi lines comment
 - [ ] add sort by lines/comment... etc
 - [ ] add count file size
-- [ ] add total
+- [x] add total
 - [ ] improve speed
 - [ ] improve display
 - [ ] add unitest
